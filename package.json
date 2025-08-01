@@ -4,13 +4,14 @@
   "description": "Remove noise from GPX files for perfect Strava uploads",
   "main": "index.html",
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "node server.js",
     "build": "echo 'Static site - no build needed'",
-    "start": "vercel dev"
+    "start": "node server.js"
   },
   "dependencies": {
     "xml2js": "^0.6.2",
-    "formidable": "^3.5.1"
+    "formidable": "^3.5.1",
+    "express": "^4.18.2"
   },
   "keywords": [
     "gpx",
