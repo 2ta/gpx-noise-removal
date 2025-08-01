@@ -1,26 +1,58 @@
 // GPX Cleaner Frontend JavaScript
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('GPX Cleaner initialized');
+    
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
     const progress = document.getElementById('progress');
     const progressBar = document.getElementById('progressBar');
     const status = document.getElementById('status');
 
+    // Check if elements exist
+    if (!uploadArea) {
+        console.error('Upload area not found!');
+        return;
+    }
+    if (!fileInput) {
+        console.error('File input not found!');
+        return;
+    }
+    if (!progress) {
+        console.error('Progress element not found!');
+        return;
+    }
+    if (!progressBar) {
+        console.error('Progress bar not found!');
+        return;
+    }
+    if (!status) {
+        console.error('Status element not found!');
+        return;
+    }
+
+    console.log('All elements found successfully');
+
     // Drag and drop functionality
     uploadArea.addEventListener('dragover', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         uploadArea.classList.add('dragover');
+        console.log('Drag over detected');
     });
 
     uploadArea.addEventListener('dragleave', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         uploadArea.classList.remove('dragover');
+        console.log('Drag leave detected');
     });
 
     uploadArea.addEventListener('drop', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         uploadArea.classList.remove('dragover');
         const files = e.dataTransfer.files;
+        console.log('Drop detected, files:', files.length);
         if (files.length > 0) {
             handleFile(files[0]);
         }
@@ -28,17 +60,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // File input change
     fileInput.addEventListener('change', function(e) {
+        console.log('File input change detected');
         if (e.target.files.length > 0) {
+            console.log('File selected:', e.target.files[0].name);
             handleFile(e.target.files[0]);
         }
     });
 
     // Click to upload
-    uploadArea.addEventListener('click', function() {
+    uploadArea.addEventListener('click', function(e) {
+        // Prevent triggering if clicking on the button
+        if (e.target.tagName === 'BUTTON') {
+            return;
+        }
+        console.log('Upload area clicked');
         fileInput.click();
     });
 
     function handleFile(file) {
+        console.log('Handling file:', file.name, 'Size:', file.size);
+        
         // Validate file type
         if (!file.name.toLowerCase().endsWith('.gpx')) {
             showStatus('❌ Please select a valid GPX file. Only .gpx files are supported.', 'error');
@@ -68,11 +109,15 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         formData.append('settings', JSON.stringify(settings));
 
+        console.log('Starting upload with settings:', settings);
+
         // Upload file with enhanced progress tracking
         uploadFile(formData, file.name);
     }
 
     function uploadFile(formData, fileName) {
+        console.log('Uploading file:', fileName);
+        
         const xhr = new XMLHttpRequest();
 
         // Upload progress
@@ -85,6 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const uploadedMB = (e.loaded / (1024 * 1024)).toFixed(2);
                 const totalMB = (e.total / (1024 * 1024)).toFixed(2);
                 showStatus(`📤 Uploading: ${uploadedMB}MB / ${totalMB}MB (${Math.round(percentComplete)}%)`, 'info');
+                console.log('Upload progress:', percentComplete + '%');
             }
         });
 
@@ -92,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
         xhr.upload.addEventListener('load', function() {
             showStatus('✅ Upload complete! 🔄 Processing GPX data...', 'info');
             progressBar.style.width = '100%';
+            console.log('Upload completed, processing...');
             
             // Simulate processing time
             setTimeout(() => {
@@ -100,11 +147,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         xhr.addEventListener('load', function() {
+            console.log('XHR load event, status:', xhr.status);
             progress.style.display = 'none';
             
             if (xhr.status === 200) {
                 try {
                     const response = JSON.parse(xhr.responseText);
+                    console.log('Response received:', response);
                     if (response.success) {
                         downloadProcessedFile(response.data, response.stats, fileName);
                     } else {
@@ -113,6 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } catch (e) {
                     showStatus('❌ Error: Invalid response from server. Please try again.', 'error');
                     console.error('Response parsing error:', e);
+                    console.error('Response text:', xhr.responseText);
                 }
             } else if (xhr.status === 413) {
                 showStatus('❌ Error: File too large for processing. Please try a smaller file.', 'error');
@@ -125,12 +175,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        xhr.addEventListener('error', function() {
+        xhr.addEventListener('error', function(e) {
+            console.error('XHR error:', e);
             progress.style.display = 'none';
             showStatus('❌ Network error. Please check your internet connection and try again.', 'error');
         });
 
         xhr.addEventListener('timeout', function() {
+            console.error('XHR timeout');
             progress.style.display = 'none';
             showStatus('❌ Request timeout. The file might be too large or the server is busy. Please try again.', 'error');
         });
@@ -138,11 +190,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set timeout to 5 minutes for large files
         xhr.timeout = 300000; // 5 minutes
 
+        console.log('Sending request to /api/process-gpx');
         xhr.open('POST', '/api/process-gpx');
         xhr.send(formData);
     }
 
     function downloadProcessedFile(xmlData, stats, originalFileName) {
+        console.log('Downloading processed file:', originalFileName);
+        
         // Create blob and download link
         const blob = new Blob([xmlData], { type: 'application/gpx+xml' });
         const url = URL.createObjectURL(blob);
@@ -178,6 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showStatus(message, type) {
+        console.log('Showing status:', type, message);
         status.innerHTML = message;
         status.className = 'status ' + type;
         status.style.display = 'block';
@@ -235,4 +291,6 @@ document.addEventListener('DOMContentLoaded', function() {
         uploadArea.querySelector('.upload-text').textContent = 
             'Drop your GPX file here or click to browse';
     });
+
+    console.log('GPX Cleaner setup complete');
 });
