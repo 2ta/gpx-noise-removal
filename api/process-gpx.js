@@ -1,5 +1,6 @@
 const xml2js = require('xml2js');
 const formidable = require('formidable');
+const fs = require('fs');
 
 // Helper function to calculate distance between two points
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -242,11 +243,26 @@ function processGPXData(gpxData, settings) {
 
 // Main handler function
 module.exports = async function handler(req, res) {
+    console.log('API endpoint called:', req.method, req.url);
+    
+    // Add CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+    
     if (req.method !== 'POST') {
+        console.log('Method not allowed:', req.method);
         return res.status(405).json({ success: false, error: 'Method not allowed' });
     }
     
     try {
+        console.log('Starting file processing...');
         const form = formidable({
             maxFileSize: 100 * 1024 * 1024, // 100MB - much higher limit
             allowEmptyFiles: false,
@@ -255,8 +271,10 @@ module.exports = async function handler(req, res) {
         });
         
         const [fields, files] = await form.parse(req);
+        console.log('Form parsed, files:', Object.keys(files), 'fields:', Object.keys(fields));
         
         if (!files.gpxFile || !files.gpxFile[0]) {
+            console.log('No GPX file found in request');
             return res.status(400).json({ success: false, error: 'No GPX file provided' });
         }
         
