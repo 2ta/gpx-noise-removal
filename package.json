@@ -1,0 +1,28 @@
+{
+  "name": "gpx-cleaner",
+  "version": "1.0.0",
+  "description": "Remove noise from GPX files for perfect Strava uploads",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Static site - no build needed'",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "xml2js": "^0.6.2",
+    "formidable": "^3.5.1"
+  },
+  "keywords": [
+    "gpx",
+    "gps",
+    "strava",
+    "noise-removal",
+    "track-cleaning",
+    "vercel"
+  ],
+  "author": "GPX Cleaner",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
