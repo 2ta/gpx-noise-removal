@@ -75,6 +75,12 @@
             margin-bottom: 10px;
         }
 
+        .upload-hint {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
         .file-input {
             display: none;
         }
@@ -183,6 +189,7 @@
         <div class="upload-area" id="uploadArea">
             <div class="upload-icon">📁</div>
             <div class="upload-text">Drop your GPX file here or click to browse</div>
+            <div class="upload-hint">Supports .gpx files up to 100MB</div>
             <input type="file" id="fileInput" class="file-input" accept=".gpx">
             <button class="btn" onclick="document.getElementById('fileInput').click()">Choose File</button>
         </div>

@@ -248,8 +248,10 @@ module.exports = async function handler(req, res) {
     
     try {
         const form = formidable({
-            maxFileSize: 10 * 1024 * 1024, // 10MB
+            maxFileSize: 100 * 1024 * 1024, // 100MB - much higher limit
             allowEmptyFiles: false,
+            maxFields: 10,
+            maxFieldsSize: 1024 * 1024, // 1MB for form fields
         });
         
         const [fields, files] = await form.parse(req);
@@ -259,11 +261,29 @@ module.exports = async function handler(req, res) {
         }
         
         const gpxFile = files.gpxFile[0];
+        
+        // Validate file size
+        const fileSizeMB = gpxFile.size / (1024 * 1024);
+        if (fileSizeMB > 100) {
+            return res.status(413).json({ 
+                success: false, 
+                error: `File size (${fileSizeMB.toFixed(2)}MB) exceeds the maximum allowed limit (100MB)` 
+            });
+        }
+        
         const settings = JSON.parse(fields.settings[0]);
         
         // Read and parse GPX file
         const fs = require('fs');
         const gpxContent = fs.readFileSync(gpxFile.filepath, 'utf8');
+        
+        // Basic GPX validation
+        if (!gpxContent.includes('<gpx') || !gpxContent.includes('</gpx>')) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Invalid GPX file format. File must contain valid GPX XML structure.' 
+            });
+        }
         
         const parser = new xml2js.Parser({
             explicitArray: true,
@@ -295,9 +315,32 @@ module.exports = async function handler(req, res) {
         
     } catch (error) {
         console.error('Processing error:', error);
-        res.status(500).json({
+        
+        // Handle specific error types
+        let errorMessage = 'Internal server error';
+        let statusCode = 500;
+        
+        if (error.message.includes('maxFileSize')) {
+            errorMessage = 'File size exceeds the maximum allowed limit (100MB)';
+            statusCode = 413;
+        } else if (error.message.includes('ENOENT')) {
+            errorMessage = 'File not found or corrupted';
+            statusCode = 400;
+        } else if (error.message.includes('XML')) {
+            errorMessage = 'Invalid GPX file format. Please ensure the file is a valid GPX file.';
+            statusCode = 400;
+        } else if (error.message.includes('JSON')) {
+            errorMessage = 'Invalid settings format';
+            statusCode = 400;
+        } else if (error.message.includes('timeout')) {
+            errorMessage = 'Processing timeout. The file might be too large or complex.';
+            statusCode = 408;
+        }
+        
+        res.status(statusCode).json({
             success: false,
-            error: error.message || 'Internal server error'
+            error: errorMessage,
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 }
