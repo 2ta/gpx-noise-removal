@@ -1,5 +1,5 @@
 const xml2js = require('xml2js');
-const formidable = require('formidable');
+const { formidable } = require('formidable');
 const fs = require('fs');
 
 // Helper function to calculate distance between two points
@@ -235,7 +235,11 @@ function processGPXData(gpxData, settings) {
     
     // Optimize for Strava if requested
     if (settings.optimizeForStrava) {
-        gpxData = optimizeForStrava(gpxData, segment.trkpt);
+        // Get the first track segment's points for optimization
+        const firstSegment = gpxData.gpx.trk[0]?.trkseg?.[0];
+        if (firstSegment && firstSegment.trkpt) {
+            gpxData = optimizeForStrava(gpxData, firstSegment.trkpt);
+        }
     }
     
     return { gpxData, stats: originalStats };
@@ -270,7 +274,12 @@ module.exports = async function handler(req, res) {
             maxFieldsSize: 1024 * 1024, // 1MB for form fields
         });
         
-        const [fields, files] = await form.parse(req);
+        const [fields, files] = await new Promise((resolve, reject) => {
+            form.parse(req, (err, fields, files) => {
+                if (err) reject(err);
+                else resolve([fields, files]);
+            });
+        });
         console.log('Form parsed, files:', Object.keys(files), 'fields:', Object.keys(fields));
         
         if (!files.gpxFile || !files.gpxFile[0]) {
