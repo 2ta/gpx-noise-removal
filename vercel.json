@@ -19,10 +19,5 @@
       "src": "/(.*)",
       "dest": "/$1"
     }
-  ],
-  "functions": {
-    "api/process-gpx.js": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }
